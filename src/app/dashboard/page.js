@@ -1,11 +1,20 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
 
 export default function Dashboard() {
   const [showNewProjectForm, setShowNewProjectForm] = useState(false);
+  const [showEditProjectForm, setShowEditProjectForm] = useState(false);
+  const [selectedProject, setSelectedProject] = useState(null);
   const [newProject, setNewProject] = useState({ title: '', description: '', deadline: '' });
+  const [editedProject, setEditedProject] = useState({ title: '', description: '', deadline: '' });
   const [projects, setProjects] = useState([]);
+
+  useEffect(() => {
+    const savedProjects = JSON.parse(localStorage.getItem('projects') || '[]');
+    setProjects(savedProjects);
+  }, []);
 
   const handleCreateProject = (e) => {
     e.preventDefault();
@@ -18,13 +27,28 @@ export default function Dashboard() {
       createdAt: new Date().toISOString(),
       progress: 0
     };
-    setProjects([...projects, project]);
+    const updatedProjects = [...projects, project];
+    setProjects(updatedProjects);
+    localStorage.setItem('projects', JSON.stringify(updatedProjects));
     setShowNewProjectForm(false);
     setNewProject({ title: '', description: '', deadline: '' });
   };
 
+  const handleEditProject = (e) => {
+    e.preventDefault();
+    const updatedProjects = projects.map(p => 
+      p.id === selectedProject.id ? { ...p, ...editedProject } : p
+    );
+    setProjects(updatedProjects);
+    localStorage.setItem('projects', JSON.stringify(updatedProjects));
+    setShowEditProjectForm(false);
+    setSelectedProject(null);
+  };
+
   const handleDeleteProject = (projectId) => {
-    setProjects(projects.filter(project => project.id !== projectId));
+    const updatedProjects = projects.filter(project => project.id !== projectId);
+    setProjects(updatedProjects);
+    localStorage.setItem('projects', JSON.stringify(updatedProjects));
   };
 
   const getStatusColor = (progress) => {
@@ -39,13 +63,21 @@ export default function Dashboard() {
     const completedTasks = projects.reduce((acc, project) => 
       acc + project.tasks.filter(task => task.completed).length, 0);
     const pendingTasks = totalTasks - completedTasks;
-    const upcomingDeadlines = projects.filter(project => {
-      const deadline = new Date(project.deadline);
+    const upcomingDeadlines = projects.reduce((acc, project) => {
+      const projectDeadline = new Date(project.deadline);
       const today = new Date();
-      const diffTime = deadline - today;
+      const diffTime = projectDeadline - today;
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      return diffDays <= 7 && diffDays >= 0;
-    }).length;
+      
+      const tasksWithDeadlines = project.tasks.filter(task => {
+        const taskDeadline = new Date(task.deadline);
+        const taskDiffTime = taskDeadline - today;
+        const taskDiffDays = Math.ceil(taskDiffTime / (1000 * 60 * 60 * 24));
+        return taskDiffDays <= 7 && taskDiffDays >= 0;
+      }).length;
+
+      return acc + (diffDays <= 7 && diffDays >= 0 ? 1 : 0) + tasksWithDeadlines;
+    }, 0);
 
     return { totalTasks, completedTasks, pendingTasks, upcomingDeadlines };
   };
@@ -167,7 +199,27 @@ export default function Dashboard() {
                         </span>
                       </div>
                     </div>
-                    <div className="ml-6">
+                    <div className="ml-6 flex space-x-3">
+                      <Link
+                        href={`/project/${project.id}`}
+                        className="text-indigo-600 hover:text-indigo-900"
+                      >
+                        View Tasks
+                      </Link>
+                      <button
+                        onClick={() => {
+                          setSelectedProject(project);
+                          setEditedProject({
+                            title: project.title,
+                            description: project.description,
+                            deadline: project.deadline
+                          });
+                          setShowEditProjectForm(true);
+                        }}
+                        className="text-indigo-600 hover:text-indigo-900"
+                      >
+                        Edit
+                      </button>
                       <button
                         onClick={() => handleDeleteProject(project.id)}
                         className="text-red-600 hover:text-red-900"
@@ -230,6 +282,64 @@ export default function Dashboard() {
                     className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
                   >
                     Create Project
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Project Modal */}
+        {showEditProjectForm && selectedProject && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+              <h2 className="text-xl font-semibold mb-4">Edit Project</h2>
+              <form onSubmit={handleEditProject}>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Project Title</label>
+                  <input
+                    type="text"
+                    value={editedProject.title}
+                    onChange={(e) => setEditedProject({ ...editedProject, title: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    required
+                  />
+                </div>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                  <textarea
+                    value={editedProject.description}
+                    onChange={(e) => setEditedProject({ ...editedProject, description: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    rows="3"
+                  />
+                </div>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Deadline</label>
+                  <input
+                    type="date"
+                    value={editedProject.deadline}
+                    onChange={(e) => setEditedProject({ ...editedProject, deadline: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    required
+                  />
+                </div>
+                <div className="flex justify-end space-x-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowEditProjectForm(false);
+                      setSelectedProject(null);
+                    }}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-800"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
+                  >
+                    Save Changes
                   </button>
                 </div>
               </form>
