@@ -1,42 +1,86 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 export default function Navbar() {
+  const [notificationCount, setNotificationCount] = useState(0);
   const pathname = usePathname();
 
+  useEffect(() => {
+    const fetchNotificationCount = () => {
+      const projects = JSON.parse(localStorage.getItem('projects') || '[]');
+      const today = new Date();
+      const threeDaysFromNow = new Date(today);
+      threeDaysFromNow.setDate(today.getDate() + 3);
+
+      let count = 0;
+
+      projects.forEach(project => {
+        // Check project deadline
+        const projectDeadline = new Date(project.deadline);
+        if (projectDeadline < today || projectDeadline <= threeDaysFromNow) {
+          count++;
+        }
+
+        // Check task deadlines
+        project.tasks.forEach(task => {
+          const taskDeadline = new Date(task.deadline);
+          if ((taskDeadline < today || taskDeadline <= threeDaysFromNow) && !task.completed) {
+            count++;
+          }
+        });
+      });
+
+      setNotificationCount(count);
+    };
+
+    fetchNotificationCount();
+    // Refresh count every minute
+    const interval = setInterval(fetchNotificationCount, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const isActive = (path) => pathname === path;
+
   return (
-    <nav className="bg-white shadow-md">
-      <div className="max-w-6xl mx-auto px-4">
-        <div className="flex justify-between items-center h-16">
-          <div className="flex items-center">
-            <Link href="/" className="text-3xl font-bold text-gray-800">
-              Nakama
-            </Link>
-          </div>
-          
-          <div className="flex items-center space-x-4">
-            <Link 
-              href="/" 
-              className={`px-3 py-2 rounded-md text-sm font-medium ${
-                pathname === '/' 
-                  ? 'bg-blue-600 text-white' 
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              Home
-            </Link>
-            <Link 
-              href="/about" 
-              className={`px-3 py-2 rounded-md text-sm font-medium ${
-                pathname === '/about' 
-                  ? 'bg-blue-600 text-white' 
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              About
-            </Link>
+    <nav className="bg-white shadow">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between h-16">
+          <div className="flex">
+            <div className="flex-shrink-0 flex items-center">
+              <Link href="/" className="text-xl font-bold text-indigo-600">
+                Project Manager
+              </Link>
+            </div>
+            <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
+              <Link
+                href="/dashboard"
+                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+                  isActive('/dashboard')
+                    ? 'border-indigo-500 text-gray-900'
+                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                }`}
+              >
+                Dashboard
+              </Link>
+              <Link
+                href="/notifications"
+                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+                  isActive('/notifications')
+                    ? 'border-indigo-500 text-gray-900'
+                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                }`}
+              >
+                Notifications
+                {notificationCount > 0 && (
+                  <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                    {notificationCount}
+                  </span>
+                )}
+              </Link>
+            </div>
           </div>
         </div>
       </div>
