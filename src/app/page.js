@@ -137,7 +137,7 @@ export default function Home() {
                   <p className="text-gray-500">Product Manager</p>
                 </div>
               </div>
-              <p className="text-gray-600">"This platform has transformed how our team collaborates. The intuitive interface and powerful features have significantly improved our productivity."</p>
+              <p className="text-gray-600">&quot;This platform has transformed how our team collaborates. The intuitive interface and powerful features have significantly improved our productivity.&quot;</p>
             </div>
 
             {/* Testimonial 2 */}
@@ -151,7 +151,7 @@ export default function Home() {
                   <p className="text-gray-500">Team Lead</p>
                 </div>
               </div>
-              <p className="text-gray-600">"The task management features are exceptional. We've seen a 40% increase in project completion rates since switching to this platform."</p>
+              <p className="text-gray-600">&quot;The task management features are exceptional. We&apos;ve seen a 40% increase in project completion rates since switching to this platform.&quot;</p>
             </div>
 
             {/* Testimonial 3 */}
@@ -165,7 +165,7 @@ export default function Home() {
                   <p className="text-gray-500">CEO</p>
                 </div>
               </div>
-              <p className="text-gray-600">"The analytics and reporting features give us valuable insights into our team's performance. It's become an essential tool for our business."</p>
+              <p className="text-gray-600">&quot;The analytics and reporting features give us valuable insights into our team&apos;s performance. It&apos;s become an essential tool for our business.&quot;</p>
             </div>
           </div>
         </div>
